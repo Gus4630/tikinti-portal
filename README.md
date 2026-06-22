@@ -146,7 +146,7 @@ Critical variables:
 | `RABBIT_USERNAME` / `RABBIT_PASSWORD` | `backend/.env` | RabbitMQ credentials |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | `backend/.env` | Token signing (min 32 chars) |
 | `GEMINI_API_KEY` | `backend/.env` | Google AI Studio key for OCR |
-| `GEMINI_PRIMARY_MODEL` / `GEMINI_FALLBACK_MODEL` | `backend/.env` | e.g. `gemini-2.0-flash-lite` |
+| `GEMINI_PRIMARY_MODEL` / `GEMINI_FALLBACK_MODEL` | `backend/.env` | e.g. `gemini-3.1-flash-lite` |
 | `NUXT_PUBLIC_API_BASE` | build-time env | Backend URL the browser calls |
 | `CORS_ALLOWED_ORIGINS` | `backend/.env` | Comma-separated allowed frontend origins |
 
