@@ -1,9 +1,11 @@
 package az.tikinti.portal.model.dto.request.building;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -26,7 +28,8 @@ public class BuildingRequest {
     @Positive
     private BigDecimal budgetLimit;
 
-    private java.util.UUID groupId;
+    @NotNull
+    private UUID groupId;
 
     private List<BuildingMediaRequest> media;
 }

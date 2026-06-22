@@ -8,7 +8,9 @@ import az.tikinti.portal.model.dto.request.auth.RegisterRequest;
 import az.tikinti.portal.model.dto.response.auth.AuthResponse;
 import az.tikinti.portal.model.dto.response.auth.UserResponse;
 import az.tikinti.portal.model.dto.record.SessionResponse;
+import az.tikinti.portal.model.dto.response.group.GroupInvitationResponse;
 import az.tikinti.portal.service.auth.AuthService;
+import az.tikinti.portal.service.group.GroupService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final GroupService groupService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -89,6 +92,26 @@ public class AuthController {
     public ResponseEntity<Void> revokeAllSessions(Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
         authService.revokeAllSessions(userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me/invitations")
+    public ResponseEntity<List<GroupInvitationResponse>> getMyInvitations(Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        return ResponseEntity.ok(groupService.getMyInvitations(userId));
+    }
+
+    @PostMapping("/me/invitations/{id}/accept")
+    public ResponseEntity<Void> acceptInvitation(@PathVariable UUID id, Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        groupService.acceptInvitation(id, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/me/invitations/{id}/decline")
+    public ResponseEntity<Void> declineInvitation(@PathVariable UUID id, Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        groupService.declineInvitation(id, userId);
         return ResponseEntity.noContent().build();
     }
 }

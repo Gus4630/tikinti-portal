@@ -6,8 +6,8 @@ import java.util.UUID;
 public record SupplierLedgerRow(
         UUID supplierId,
         String name,
-        BigDecimal totalAdvancedPaid,
+        BigDecimal totalInvoiced,    // APPROVED + PAID
+        BigDecimal totalPaid,        // PAID only
         BigDecimal retainageHeldAmount,
-        BigDecimal totalApprovedSpend,
-        BigDecimal balanceOwed
+        BigDecimal balanceOwed       // totalInvoiced - totalPaid
 ) {}

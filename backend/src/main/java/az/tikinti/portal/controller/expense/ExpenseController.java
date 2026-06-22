@@ -5,6 +5,7 @@ import static org.springframework.http.HttpStatus.CREATED;
 import az.tikinti.portal.model.dto.request.expense.ExpenseFilterRequest;
 import az.tikinti.portal.model.dto.request.expense.ExpenseMediaRequest;
 import az.tikinti.portal.model.dto.request.expense.ExpenseRequest;
+import az.tikinti.portal.model.dto.request.expense.ExpenseUpdateRequest;
 import az.tikinti.portal.model.dto.response.PageableResponse;
 import az.tikinti.portal.model.dto.record.ExpenseAuditResponse;
 import az.tikinti.portal.model.dto.response.expense.ExpenseMediaResponse;
@@ -15,10 +16,12 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,8 +36,10 @@ public class ExpenseController {
 
     @PostMapping("/search")
     public ResponseEntity<PageableResponse<ExpenseResponse>> search(
+            Authentication authentication,
             @Valid @RequestBody ExpenseFilterRequest request) {
-        return ResponseEntity.ok(expenseService.search(request));
+        UUID userId = UUID.fromString(authentication.getName());
+        return ResponseEntity.ok(expenseService.search(request, userId));
     }
 
     @GetMapping("/{id}")
@@ -47,9 +52,20 @@ public class ExpenseController {
         return ResponseEntity.status(CREATED).body(expenseService.create(request));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ExpenseResponse> update(
+            @PathVariable UUID id, @Valid @RequestBody ExpenseUpdateRequest request) {
+        return ResponseEntity.ok(expenseService.update(id, request));
+    }
+
     @PostMapping("/{id}/approve")
     public ResponseEntity<ExpenseResponse> approve(@PathVariable UUID id) {
         return ResponseEntity.ok(expenseService.approve(id));
+    }
+
+    @PostMapping("/{id}/pay")
+    public ResponseEntity<ExpenseResponse> pay(@PathVariable UUID id) {
+        return ResponseEntity.ok(expenseService.markAsPaid(id));
     }
 
     @PostMapping("/{id}/dispute")

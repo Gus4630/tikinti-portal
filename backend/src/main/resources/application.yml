@@ -68,6 +68,8 @@ application:
   gemini:
     api-url: ${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta}
     api-key: ${GEMINI_API_KEY:}
+    primary-model: ${GEMINI_PRIMARY_MODEL}
+    fallback-model: ${GEMINI_FALLBACK_MODEL}
   telegram:
     bot-token: ${TELEGRAM_BOT_TOKEN:}
     chat-id: ${TELEGRAM_CHAT_ID:}

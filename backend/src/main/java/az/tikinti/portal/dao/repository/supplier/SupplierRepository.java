@@ -12,4 +12,6 @@ public interface SupplierRepository
         extends JpaRepository<SupplierEntity, UUID>, JpaSpecificationExecutor<SupplierEntity> {
 
     Optional<SupplierEntity> findByNameIgnoreCase(String name);
+
+    long countByIsActiveTrue();
 }

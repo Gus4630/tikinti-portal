@@ -1,14 +1,23 @@
 package az.tikinti.portal.model.dto.record;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
+import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record ErrorResponse(String errorCode, String message, Object details, LocalDateTime timestamp) {
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ErrorResponse {
 
-    public static ErrorResponse of(String code, String message) {
-        return new ErrorResponse(code, message, null, LocalDateTime.now());
-    }
-
-    public static ErrorResponse of(String code, String message, Object details) {
-        return new ErrorResponse(code, message, details, LocalDateTime.now());
-    }
+    private String errorCode;
+    private String errorMessage;
+    private Map<String, Object> params;
+    private String requestId;
+    private LocalDateTime timestamp;
 }

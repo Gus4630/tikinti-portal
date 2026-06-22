@@ -1,17 +1,22 @@
 package az.tikinti.portal.service.invoice;
 
+import static az.tikinti.portal.exception.model.constant.ErrorCode.BAD_REQUEST;
+import static az.tikinti.portal.exception.model.constant.ErrorCode.OCR_NO_FILE;
+import static az.tikinti.portal.exception.model.constant.ErrorCode.OCR_RETRIGGER_NOT_ALLOWED;
+import static az.tikinti.portal.exception.model.constant.ErrorMessage.EXPENSE_NOT_FOUND_MESSAGE;
+import static az.tikinti.portal.model.enums.ExpenseStatus.APPROVED;
+import static az.tikinti.portal.model.enums.ExpenseStatus.UPLOADED;
+
 import az.tikinti.portal.config.RabbitConfig;
 import az.tikinti.portal.dao.entity.expense.ExpenseEntity;
 import az.tikinti.portal.dao.repository.category.CategoryRepository;
 import az.tikinti.portal.dao.repository.expense.ExpenseRepository;
-import az.tikinti.portal.exception.AlreadyExistsException;
 import az.tikinti.portal.exception.CommonException;
 import az.tikinti.portal.exception.DataNotFoundException;
-import az.tikinti.portal.exception.model.constant.ErrorCode;
-import az.tikinti.portal.exception.model.constant.ErrorMessage;
+import az.tikinti.portal.exception.DuplicateInvoiceException;
 import az.tikinti.portal.model.dto.record.InvoiceMessage;
-import az.tikinti.portal.model.enums.ExpenseStatus;
 import az.tikinti.portal.service.building.BuildingService;
+import az.tikinti.portal.model.enums.ExpenseCreationType;
 import az.tikinti.portal.service.file.FileStorageService;
 import az.tikinti.portal.util.HashUtil;
 import java.math.BigDecimal;
@@ -43,12 +48,13 @@ public class InvoiceUploadService {
         try {
             bytes = file.getBytes();
         } catch (Exception e) {
-            throw new CommonException(ErrorCode.BAD_REQUEST, "Cannot read uploaded file: " + e.getMessage());
+            throw new CommonException(BAD_REQUEST, "Cannot read uploaded file: " + e.getMessage());
         }
 
         String contentHash = HashUtil.sha256Hex(bytes);
-        expenseRepository.findByContentHash(contentHash).ifPresent(existing ->
-                { throw AlreadyExistsException.of(ErrorMessage.DUPLICATE_INVOICE_MESSAGE, existing.getId()); });
+        expenseRepository.findByContentHash(contentHash).ifPresent(existing -> {
+            throw new DuplicateInvoiceException(existing.getId());
+        });
 
         var building = buildingService.getExistingEntity(buildingId);
         var category = categoryId != null
@@ -67,7 +73,8 @@ public class InvoiceUploadService {
                 .amountBaseCurrency(BigDecimal.ZERO)
                 .contentHash(contentHash)
                 .imageUrl(filePath)
-                .status(ExpenseStatus.UPLOADED)
+                .status(UPLOADED)
+                .creationType(ExpenseCreationType.OCR)
                 .expenseDate(LocalDate.now())
                 .build();
 
@@ -75,7 +82,34 @@ public class InvoiceUploadService {
         UUID expenseId = saved.getId();
         log.info("Invoice saved for expense {}, will queue after commit", expenseId);
 
-        // Publish AFTER the transaction commits so the worker can find the expense in DB
+        publishAfterCommit(expenseId, filePath);
+        return expenseId;
+    }
+
+    @Transactional
+    public void retrigger(UUID expenseId) {
+        var expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> DataNotFoundException.of(EXPENSE_NOT_FOUND_MESSAGE, "id", expenseId));
+
+        if (expense.getStatus() == APPROVED) {
+            throw new CommonException(OCR_RETRIGGER_NOT_ALLOWED,
+                    "Cannot retrigger OCR for expense with status: " + expense.getStatus());
+        }
+
+        String filePath = expense.getImageUrl();
+        if (filePath == null || filePath.isBlank()) {
+            throw new CommonException(OCR_NO_FILE, "No invoice file associated with expense: " + expenseId);
+        }
+
+        expense.setStatus(UPLOADED);
+        expense.setNotes(null);
+        expenseRepository.save(expense);
+        log.info("OCR retrigger requested for expense {}", expenseId);
+
+        publishAfterCommit(expenseId, filePath);
+    }
+
+    private void publishAfterCommit(UUID expenseId, String filePath) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
@@ -86,7 +120,5 @@ public class InvoiceUploadService {
                 log.info("Invoice queued for OCR: expense {}", expenseId);
             }
         });
-
-        return expenseId;
     }
 }

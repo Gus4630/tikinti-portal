@@ -1,11 +1,13 @@
 package az.tikinti.portal.controller.invoice;
 
+import static org.springframework.http.HttpStatus.ACCEPTED;
+
 import az.tikinti.portal.service.invoice.InvoiceUploadService;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,6 +28,12 @@ public class InvoiceUploadController {
             @RequestParam(value = "categoryId", required = false) UUID categoryId) {
 
         UUID expenseId = invoiceUploadService.upload(file, buildingId, categoryId);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of("expenseId", expenseId));
+        return ResponseEntity.status(ACCEPTED).body(Map.of("expenseId", expenseId));
+    }
+
+    @PostMapping("/{expenseId}/retrigger")
+    public ResponseEntity<Void> retrigger(@PathVariable UUID expenseId) {
+        invoiceUploadService.retrigger(expenseId);
+        return ResponseEntity.accepted().build();
     }
 }

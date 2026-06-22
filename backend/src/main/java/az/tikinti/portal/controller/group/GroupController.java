@@ -2,9 +2,9 @@ package az.tikinti.portal.controller.group;
 
 import static org.springframework.http.HttpStatus.CREATED;
 
-import az.tikinti.portal.model.dto.request.group.AddGroupMemberRequest;
+import az.tikinti.portal.model.dto.request.group.GroupInvitationRequest;
 import az.tikinti.portal.model.dto.request.group.GroupRequest;
-import az.tikinti.portal.model.dto.response.group.GroupMemberResponse;
+import az.tikinti.portal.model.dto.response.group.GroupInvitationResponse;
 import az.tikinti.portal.model.dto.response.group.GroupResponse;
 import az.tikinti.portal.service.group.GroupService;
 import jakarta.validation.Valid;
@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,8 +30,9 @@ public class GroupController {
     private final GroupService groupService;
 
     @GetMapping
-    public ResponseEntity<List<GroupResponse>> findAll() {
-        return ResponseEntity.ok(groupService.findAll());
+    public ResponseEntity<List<GroupResponse>> findAll(Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        return ResponseEntity.ok(groupService.findAll(userId));
     }
 
     @GetMapping("/{id}")
@@ -39,8 +41,11 @@ public class GroupController {
     }
 
     @PostMapping
-    public ResponseEntity<GroupResponse> create(@Valid @RequestBody GroupRequest request) {
-        return ResponseEntity.status(CREATED).body(groupService.create(request));
+    public ResponseEntity<GroupResponse> create(
+            Authentication authentication,
+            @Valid @RequestBody GroupRequest request) {
+        UUID creatorId = UUID.fromString(authentication.getName());
+        return ResponseEntity.status(CREATED).body(groupService.create(request, creatorId));
     }
 
     @PutMapping("/{id}")
@@ -55,16 +60,37 @@ public class GroupController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/members")
-    public ResponseEntity<GroupMemberResponse> addMember(
-            @PathVariable UUID id, @Valid @RequestBody AddGroupMemberRequest request) {
-        return ResponseEntity.status(CREATED).body(groupService.addMember(id, request));
+    @GetMapping("/{id}/invitations")
+    public ResponseEntity<List<GroupInvitationResponse>> getGroupInvitations(
+            @PathVariable UUID id, Authentication authentication) {
+        UUID requesterId = UUID.fromString(authentication.getName());
+        return ResponseEntity.ok(groupService.getGroupInvitations(id, requesterId));
+    }
+
+    @PostMapping("/{id}/invitations")
+    public ResponseEntity<GroupInvitationResponse> sendInvitation(
+            @PathVariable UUID id,
+            Authentication authentication,
+            @Valid @RequestBody GroupInvitationRequest request) {
+        UUID invitedById = UUID.fromString(authentication.getName());
+        return ResponseEntity.status(CREATED).body(groupService.sendInvitation(id, request, invitedById));
+    }
+
+    @DeleteMapping("/{id}/invitations/{invitationId}")
+    public ResponseEntity<Void> revokeInvitation(
+            @PathVariable UUID id, @PathVariable UUID invitationId,
+            Authentication authentication) {
+        UUID requesterId = UUID.fromString(authentication.getName());
+        groupService.revokeInvitation(id, invitationId, requesterId);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}/members/{memberId}")
     public ResponseEntity<Void> removeMember(
-            @PathVariable UUID id, @PathVariable UUID memberId) {
-        groupService.removeMember(id, memberId);
+            @PathVariable UUID id, @PathVariable UUID memberId,
+            Authentication authentication) {
+        UUID requesterId = UUID.fromString(authentication.getName());
+        groupService.removeMember(id, memberId, requesterId);
         return ResponseEntity.noContent().build();
     }
 }

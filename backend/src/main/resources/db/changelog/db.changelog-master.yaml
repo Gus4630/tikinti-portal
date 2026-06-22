@@ -9,3 +9,17 @@ databaseChangeLog:
       file: db/changelog/V004__nullable-category.sql
   - include:
       file: db/changelog/V005__groups-and-budget.sql
+  - include:
+      file: db/changelog/V006__expense-items.sql
+  - include:
+      file: db/changelog/V007__buildings-group-not-null.sql
+  - include:
+      file: db/changelog/V008__group-invitations.sql
+  - include:
+      file: db/changelog/V009__group-member-partial-unique.sql
+  - include:
+      file: db/changelog/V010__building-category-budgets.sql
+  - include:
+      file: db/changelog/V011__category-path-partial-unique.sql
+  - include:
+      file: db/changelog/V012__expense-creation-type.sql

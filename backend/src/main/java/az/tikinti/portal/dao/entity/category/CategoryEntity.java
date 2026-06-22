@@ -4,7 +4,6 @@ import az.tikinti.portal.dao.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -39,9 +38,6 @@ public class CategoryEntity extends BaseEntity {
 
     @Column(name = "item_description", columnDefinition = "TEXT")
     private String itemDescription;
-
-    @Column(name = "budget_limit")
-    private BigDecimal budgetLimit;
 
     @Column(name = "display_order")
     private Integer displayOrder;

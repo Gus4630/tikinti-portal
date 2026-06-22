@@ -13,19 +13,6 @@ const profileSuccess = ref(false)
 // Notifications (UI-only)
 const notifs = reactive({ newInvoice: true, budgetExceeded: true, weeklyReport: false })
 
-// Categories
-const { data: categoriesData, refresh: refreshCats } = await useAsyncData('settings-cats', () =>
-  $fetch<{ content: Record<string, unknown>[] }>('/api/v1/categories/search', {
-    baseURL: config.public.apiBase,
-    method: 'POST',
-    headers: headers.value,
-    body: { page: 0, perPage: 200, sortBy: 'itemName', sortDir: 'ASC' },
-  }).catch(() => ({ content: [] })),
-)
-const categories = computed(() => (categoriesData.value?.content ?? []) as Record<string, unknown>[])
-const newCatName = ref('')
-const catSaving = ref(false)
-
 // Load current user profile
 const { data: meData } = await useAsyncData('settings-me', () =>
   $fetch<{ fullName: string; email: string; username: string }>('/api/v1/auth/me', {
@@ -60,33 +47,7 @@ async function saveProfile() {
   }
 }
 
-async function deleteCategory(id: unknown) {
-  await $fetch(`/api/v1/categories/${id}`, {
-    baseURL: config.public.apiBase,
-    method: 'DELETE',
-    headers: headers.value,
-  }).catch(() => {})
-  await refreshCats()
-}
 
-async function addCategory() {
-  if (!newCatName.value.trim()) return
-  catSaving.value = true
-  try {
-    await $fetch('/api/v1/categories', {
-      baseURL: config.public.apiBase,
-      method: 'POST',
-      headers: headers.value,
-      body: { itemName: newCatName.value.trim(), itemCode: 'USR', level1: 'Digər', level2: 'Əlavə', level3: null },
-    })
-    newCatName.value = ''
-    await refreshCats()
-  } finally {
-    catSaving.value = false
-  }
-}
-
-const COLORS = ['#3D5AF1','#F59E0B','#10B981','#EF4444','#8B5CF6','#06B6D4','#EC4899','#F97316']
 </script>
 
 <template>
@@ -182,53 +143,24 @@ const COLORS = ['#3D5AF1','#F59E0B','#10B981','#EF4444','#8B5CF6','#06B6D4','#EC
         </div>
       </div>
 
-      <!-- Categories card (full width) -->
-      <div class="tk-card" style="grid-column:1 / -1;padding:22px">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
-          <UIcon name="i-lucide-tag" style="width:18px;height:18px;color:#D97706" />
-          <h3 style="font-size:16px;font-weight:600;margin:0">Xərc kateqoriyaları</h3>
-        </div>
-        <p style="font-size:13px;color:#6B7280;margin:0 0 18px">Qaimələrin təsnifatı üçün kateqoriyaları idarə edin</p>
-
-        <div style="display:flex;flex-direction:column;gap:0;margin-bottom:18px;max-height:320px;overflow-y:auto;border:1px solid #F3F4F6;border-radius:8px">
-          <div
-            v-for="(c, i) in categories"
-            :key="String(c.id)"
-            style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid #F3F4F6"
-          >
-            <span :style="`width:9px;height:9px;border-radius:9999px;background:${COLORS[i % COLORS.length]};flex:none`" />
-            <span style="flex:1;font-size:14px;font-weight:500">{{ c.itemName }}</span>
-            <span style="font-size:12px;font-family:var(--font-mono);color:#9CA3AF">{{ c.itemCode }}</span>
-            <button
-              style="background:none;border:none;cursor:pointer;padding:2px 4px;color:#D1D5DB;display:inline-flex"
-              @click="deleteCategory(c.id)"
-            >
-              <UIcon name="i-lucide-trash-2" style="width:15px;height:15px" />
-            </button>
+      <!-- Categories link card (full width) -->
+      <div class="tk-card" style="grid-column:1 / -1;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:38px;height:38px;border-radius:9px;background:#EEF2FF;display:flex;align-items:center;justify-content:center;flex:none">
+            <UIcon name="i-lucide-tag" style="width:18px;height:18px;color:#3D5AF1" />
           </div>
-          <div v-if="!categories.length" style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">
-            Kateqoriya yoxdur
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#0A0A0A">Xərc kateqoriyaları</div>
+            <div style="font-size:13px;color:#6B7280;margin-top:1px">Çoxsəviyyəli kateqoriya ağacını idarə edin</div>
           </div>
         </div>
-
-        <!-- Add new category -->
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <input
-            v-model="newCatName"
-            type="text"
-            placeholder="Yeni kateqoriya adı"
-            style="flex:1;min-width:200px;height:40px;border:1px solid #D1D5DB;border-radius:7px;padding:0 12px;font-size:14px;outline:none;font-family:inherit;box-sizing:border-box"
-            @keyup.enter="addCategory"
-          >
-          <button
-            :disabled="catSaving || !newCatName.trim()"
-            style="height:40px;padding:0 18px;background:#3D5AF1;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px;white-space:nowrap"
-            @click="addCategory"
-          >
-            <UIcon v-if="catSaving" name="i-lucide-loader-2" style="width:15px;height:15px;animation:spin 1s linear infinite" />
-            Əlavə et
-          </button>
-        </div>
+        <NuxtLink
+          to="/categories"
+          style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 16px;background:#3D5AF1;color:#fff;border-radius:8px;font-size:13.5px;font-weight:600;text-decoration:none;flex:none"
+        >
+          Kateqoriyalara keç
+          <UIcon name="i-lucide-arrow-right" style="width:14px;height:14px" />
+        </NuxtLink>
       </div>
     </div>
   </div>

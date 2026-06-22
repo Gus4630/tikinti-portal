@@ -4,7 +4,9 @@ import az.tikinti.portal.dao.entity.BaseEntity;
 import az.tikinti.portal.dao.entity.building.BuildingEntity;
 import az.tikinti.portal.dao.entity.category.CategoryEntity;
 import az.tikinti.portal.dao.entity.supplier.SupplierEntity;
+import az.tikinti.portal.model.enums.ExpenseCreationType;
 import az.tikinti.portal.model.enums.ExpenseStatus;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,15 +14,20 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 import org.hibernate.envers.RelationTargetAuditMode;
 
 @Data
@@ -67,12 +74,21 @@ public class ExpenseEntity extends BaseEntity {
     private String imageUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", nullable = false, columnDefinition = "VARCHAR(20)")
     private ExpenseStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "creation_type", nullable = false, columnDefinition = "VARCHAR(20)")
+    private ExpenseCreationType creationType;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
     @Column(name = "expense_date", nullable = false)
     private LocalDate expenseDate;
+
+    @NotAudited
+    @Builder.Default
+    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ExpenseItemEntity> items = new ArrayList<>();
 }

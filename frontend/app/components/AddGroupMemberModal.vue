@@ -23,6 +23,7 @@ const availableUsers = computed(() =>
   (usersData.value ?? []).filter(u => !props.existingMemberIds.includes(String(u.id))),
 )
 
+const { resolveError } = useApiError()
 const selectedUserId = ref('')
 const memberRole = ref('')
 const loading = ref(false)
@@ -40,8 +41,9 @@ async function save() {
       body: { userId: selectedUserId.value, memberRole: memberRole.value || undefined },
     })
     emit('saved')
-  } catch {
-    error.value = 'Xəta baş verdi. Yenidən cəhd edin.'
+  } catch (err: unknown) {
+    const { message } = resolveError(err)
+    error.value = message
   } finally {
     loading.value = false
   }

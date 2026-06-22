@@ -9,9 +9,11 @@ import az.tikinti.portal.dao.entity.group.GroupEntity;
 import az.tikinti.portal.dao.repository.building.BuildingMediaRepository;
 import az.tikinti.portal.dao.repository.building.BuildingRepository;
 import az.tikinti.portal.dao.repository.expense.ExpenseRepository;
+import az.tikinti.portal.dao.repository.group.GroupMemberRepository;
 import az.tikinti.portal.dao.repository.group.GroupRepository;
 import az.tikinti.portal.dao.specification.BuildingSpecification;
 import az.tikinti.portal.exception.DataNotFoundException;
+import az.tikinti.portal.exception.ForbiddenException;
 import az.tikinti.portal.mapper.building.BuildingMapper;
 import az.tikinti.portal.model.dto.request.building.BuildingFilterRequest;
 import az.tikinti.portal.model.dto.request.building.BuildingMediaRequest;
@@ -38,12 +40,14 @@ public class BuildingService {
     private final BuildingRepository buildingRepository;
     private final BuildingMediaRepository buildingMediaRepository;
     private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
     private final ExpenseRepository expenseRepository;
     private final BuildingMapper buildingMapper;
 
-    public PageableResponse<BuildingResponse> search(BuildingFilterRequest request) {
+    public PageableResponse<BuildingResponse> search(BuildingFilterRequest request, UUID userId) {
+        var allowedGroupIds = groupMemberRepository.findGroupIdsByUserId(userId);
         Pageable pageable = PageUtil.createPageable(request);
-        var spec = BuildingSpecification.getSpecification(request);
+        var spec = BuildingSpecification.getSpecification(request, allowedGroupIds);
         var page = buildingRepository.findAll(spec, pageable);
         var response = buildingMapper.toResponse(page);
         response.getContent().forEach(b -> {
@@ -63,9 +67,7 @@ public class BuildingService {
     @Transactional
     public BuildingResponse create(BuildingRequest request) {
         var entity = buildingMapper.toEntity(request);
-        if (request.getGroupId() != null) {
-            entity.setGroup(resolveGroup(request.getGroupId()));
-        }
+        entity.setGroup(resolveGroup(request.getGroupId()));
         var saved = buildingRepository.save(entity);
         if (request.getMedia() != null) {
             saveMedia(saved, request.getMedia());
@@ -80,11 +82,7 @@ public class BuildingService {
     public BuildingResponse update(UUID id, BuildingRequest request) {
         var entity = getExistingEntity(id);
         buildingMapper.updateEntityFromRequest(request, entity);
-        if (request.getGroupId() != null) {
-            entity.setGroup(resolveGroup(request.getGroupId()));
-        } else {
-            entity.setGroup(null);
-        }
+        entity.setGroup(resolveGroup(request.getGroupId()));
         log.info("Successfully UPDATED Building with ID - {}", id);
         var response = buildingMapper.toResponse(entity);
         response.setMedia(getMediaForBuilding(id));
@@ -121,6 +119,14 @@ public class BuildingService {
         return buildingRepository.findById(id)
                 .orElseThrow(() -> DataNotFoundException.of(BUILDING_NOT_FOUND_MESSAGE,
                         BaseEntity.Fields.id, id));
+    }
+
+    public void verifyBuildingAccess(UUID buildingId, UUID userId) {
+        var allowedGroupIds = groupMemberRepository.findGroupIdsByUserId(userId);
+        var building = getExistingEntity(buildingId);
+        if (!allowedGroupIds.contains(building.getGroup().getId())) {
+            throw ForbiddenException.of("Access denied to building {0}", buildingId);
+        }
     }
 
     private List<BuildingMediaResponse> getMediaForBuilding(UUID buildingId) {

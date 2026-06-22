@@ -15,7 +15,7 @@ public class OpenApiConfig {
     public OpenAPI openAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Tikinti Expense Portal API")
+                        .title("SagaGroup Expense Portal API")
                         .version("v1")
                         .description("Construction expense tracking API"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))

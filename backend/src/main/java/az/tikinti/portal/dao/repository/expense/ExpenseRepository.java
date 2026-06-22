@@ -4,6 +4,7 @@ import az.tikinti.portal.dao.entity.expense.ExpenseEntity;
 import az.tikinti.portal.model.enums.ExpenseStatus;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,6 +67,52 @@ public interface ExpenseRepository
     List<Object[]> sumAmountBaseCurrencyBySupplierAndBuilding(
             @Param("buildingId") UUID buildingId,
             @Param("status") ExpenseStatus status);
+
+    @Query("SELECT COALESCE(SUM(e.amountBaseCurrency), 0) FROM ExpenseEntity e WHERE e.status IN :statuses AND e.isActive = true")
+    BigDecimal sumAllAmountByStatusIn(@Param("statuses") Collection<ExpenseStatus> statuses);
+
+    @Query("""
+            SELECT COALESCE(SUM(e.amountBaseCurrency), 0) FROM ExpenseEntity e
+            WHERE e.building.id = :buildingId AND e.category.id = :categoryId
+            AND e.status IN :statuses AND e.isActive = true
+            """)
+    BigDecimal sumAmountByBuildingAndCategoryIn(
+            @Param("buildingId") UUID buildingId,
+            @Param("categoryId") UUID categoryId,
+            @Param("statuses") Collection<ExpenseStatus> statuses);
+
+    @Query("""
+            SELECT COALESCE(SUM(e.amountBaseCurrency), 0) FROM ExpenseEntity e
+            WHERE e.building.id = :buildingId AND e.status IN :statuses AND e.isActive = true
+            """)
+    BigDecimal sumAmountByBuildingAndStatusIn(
+            @Param("buildingId") UUID buildingId,
+            @Param("statuses") Collection<ExpenseStatus> statuses);
+
+    @Query("""
+            SELECT e.supplier.id, COALESCE(SUM(e.amountBaseCurrency), 0) FROM ExpenseEntity e
+            WHERE e.building.id = :buildingId AND e.status IN :statuses
+            AND e.isActive = true AND e.supplier IS NOT NULL
+            GROUP BY e.supplier.id
+            """)
+    List<Object[]> sumBySupplierAndBuildingAndStatusIn(
+            @Param("buildingId") UUID buildingId,
+            @Param("statuses") Collection<ExpenseStatus> statuses);
+
+    @Query(value = """
+            SELECT TO_CHAR(e.expense_date, 'YYYY-MM') AS month,
+                   COALESCE(SUM(e.amount_base_currency), 0) AS total
+            FROM expenses e
+            WHERE e.building_id = :buildingId
+              AND e.status = ANY(CAST(:statuses AS varchar[]))
+              AND e.is_active = true
+              AND e.expense_date IS NOT NULL
+            GROUP BY TO_CHAR(e.expense_date, 'YYYY-MM')
+            ORDER BY TO_CHAR(e.expense_date, 'YYYY-MM')
+            """, nativeQuery = true)
+    List<Object[]> sumMonthlyByBuildingAndStatusIn(
+            @Param("buildingId") UUID buildingId,
+            @Param("statuses") String[] statuses);
 
     @Query("""
             SELECT e FROM ExpenseEntity e

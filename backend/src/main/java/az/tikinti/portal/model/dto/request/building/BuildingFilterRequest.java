@@ -1,6 +1,7 @@
 package az.tikinti.portal.model.dto.request.building;
 
 import az.tikinti.portal.model.dto.request.PageableRequest;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -16,4 +17,5 @@ public class BuildingFilterRequest extends PageableRequest {
 
     private String name;
     private Boolean isActive;
+    private UUID groupId;
 }

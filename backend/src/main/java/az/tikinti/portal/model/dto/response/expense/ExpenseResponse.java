@@ -1,5 +1,6 @@
 package az.tikinti.portal.model.dto.response.expense;
 
+import az.tikinti.portal.model.enums.ExpenseCreationType;
 import az.tikinti.portal.model.enums.ExpenseStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
@@ -34,10 +35,12 @@ public class ExpenseResponse {
     private String contentHash;
     private String imageUrl;
     private ExpenseStatus status;
+    private ExpenseCreationType creationType;
     private String notes;
     private LocalDate expenseDate;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<ExpenseMediaResponse> media;
+    private List<ExpenseItemResponse> items;
 }

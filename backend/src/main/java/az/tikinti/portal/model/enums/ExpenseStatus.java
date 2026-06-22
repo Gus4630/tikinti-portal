@@ -5,6 +5,7 @@ public enum ExpenseStatus {
     OCR_PROCESSING,
     PENDING_REVIEW,
     APPROVED,
+    PAID,
     DISPUTED,
     REJECTED
 }

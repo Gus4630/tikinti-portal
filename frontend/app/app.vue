@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Tikinti Portal',
+  title: 'SagaGroup',
   description: 'İnşaat xərc idarəetmə portalı',
 })
 </script>

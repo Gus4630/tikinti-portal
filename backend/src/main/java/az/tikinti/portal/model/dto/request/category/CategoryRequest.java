@@ -2,7 +2,6 @@ package az.tikinti.portal.model.dto.request.category;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
@@ -29,6 +28,5 @@ public class CategoryRequest {
     private String itemName;
 
     private String itemDescription;
-    private BigDecimal budgetLimit;
     private Integer displayOrder;
 }

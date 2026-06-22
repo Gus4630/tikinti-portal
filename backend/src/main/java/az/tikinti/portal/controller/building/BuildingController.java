@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,8 +32,10 @@ public class BuildingController {
 
     @PostMapping("/search")
     public ResponseEntity<PageableResponse<BuildingResponse>> search(
+            Authentication authentication,
             @Valid @RequestBody BuildingFilterRequest request) {
-        return ResponseEntity.ok(buildingService.search(request));
+        UUID userId = UUID.fromString(authentication.getName());
+        return ResponseEntity.ok(buildingService.search(request, userId));
     }
 
     @GetMapping("/{id}")

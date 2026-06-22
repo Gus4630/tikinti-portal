@@ -1,6 +1,7 @@
 package az.tikinti.portal.service.report;
 
 import az.tikinti.portal.dao.entity.category.CategoryEntity;
+import az.tikinti.portal.dao.repository.building.BuildingCategoryBudgetRepository;
 import az.tikinti.portal.dao.repository.category.CategoryRepository;
 import az.tikinti.portal.dao.repository.expense.ExpenseRepository;
 import az.tikinti.portal.dao.repository.supplier.SupplierRepository;
@@ -13,7 +14,6 @@ import az.tikinti.portal.model.dto.record.SupplierLedgerRow;
 import az.tikinti.portal.model.dto.response.PageableResponse;
 import az.tikinti.portal.model.dto.response.expense.ExpenseResponse;
 import az.tikinti.portal.model.enums.ExpenseStatus;
-import java.util.Map;
 import az.tikinti.portal.service.building.BuildingService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -39,8 +40,12 @@ public class ReportService {
 
     private final CategoryRepository categoryRepository;
     private final ExpenseRepository expenseRepository;
+    private final BuildingCategoryBudgetRepository buildingCategoryBudgetRepository;
     private final SupplierRepository supplierRepository;
     private final ExpenseMapper expenseMapper;
+
+    private static final Set<ExpenseStatus> INVOICED_STATUSES = Set.of(ExpenseStatus.APPROVED, ExpenseStatus.PAID);
+    private static final Set<ExpenseStatus> PAID_STATUSES = Set.of(ExpenseStatus.PAID);
 
     public List<BudgetVsActualRow> getBudgetVsActual(UUID buildingId) {
         List<CategoryEntity> categories = categoryRepository.findAll().stream()
@@ -48,9 +53,12 @@ public class ReportService {
                 .toList();
 
         return categories.stream().map(cat -> {
-            BigDecimal actual = expenseRepository.sumAmountBaseCurrencyByBuildingAndCategory(
-                    buildingId, cat.getId(), ExpenseStatus.APPROVED);
-            BigDecimal budget = cat.getBudgetLimit() != null ? cat.getBudgetLimit() : BigDecimal.ZERO;
+            BigDecimal actual = expenseRepository.sumAmountByBuildingAndCategoryIn(
+                    buildingId, cat.getId(), INVOICED_STATUSES);
+            BigDecimal budget = buildingCategoryBudgetRepository
+                    .findByBuildingIdAndCategoryIdAndIsActiveTrue(buildingId, cat.getId())
+                    .map(b -> b.getBudgetLimit())
+                    .orElse(BigDecimal.ZERO);
             BigDecimal variance = budget.subtract(actual);
             BigDecimal usedPct = budget.compareTo(BigDecimal.ZERO) > 0
                     ? actual.divide(budget, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
@@ -59,7 +67,10 @@ public class ReportService {
             return new BudgetVsActualRow(
                     cat.getItemCode(), cat.getLevel1(), cat.getLevel2(), cat.getLevel3(),
                     cat.getItemName(), budget, actual, variance, usedPct);
-        }).toList();
+        })
+        .filter(row -> row.budgetLimit().compareTo(BigDecimal.ZERO) > 0
+                || row.actualSpend().compareTo(BigDecimal.ZERO) > 0)
+        .toList();
     }
 
     public Map<String, BigDecimal> getPhaseRollup(UUID buildingId) {
@@ -70,29 +81,33 @@ public class ReportService {
     }
 
     public List<SupplierLedgerRow> getSupplierLedger(UUID buildingId) {
-        List<Object[]> spendRows = expenseRepository.sumAmountBaseCurrencyBySupplierAndBuilding(
-                buildingId, ExpenseStatus.APPROVED);
+        Map<UUID, BigDecimal> invoicedBySupplier = new HashMap<>();
+        expenseRepository.sumBySupplierAndBuildingAndStatusIn(buildingId, INVOICED_STATUSES)
+                .forEach(row -> invoicedBySupplier.put((UUID) row[0], (BigDecimal) row[1]));
 
-        Map<UUID, BigDecimal> spendBySupplier = new HashMap<>();
-        spendRows.forEach(row -> spendBySupplier.put((UUID) row[0], (BigDecimal) row[1]));
+        Map<UUID, BigDecimal> paidBySupplier = new HashMap<>();
+        expenseRepository.sumBySupplierAndBuildingAndStatusIn(buildingId, PAID_STATUSES)
+                .forEach(row -> paidBySupplier.put((UUID) row[0], (BigDecimal) row[1]));
 
         List<SupplierLedgerRow> result = new ArrayList<>();
         supplierRepository.findAll().stream()
                 .filter(s -> Boolean.TRUE.equals(s.getIsActive()))
+                .filter(s -> invoicedBySupplier.containsKey(s.getId()))
                 .forEach(supplier -> {
-                    BigDecimal spend = spendBySupplier.getOrDefault(supplier.getId(), BigDecimal.ZERO);
-                    BigDecimal balance = spend.subtract(supplier.getTotalAdvancedPaid());
+                    BigDecimal invoiced = invoicedBySupplier.getOrDefault(supplier.getId(), BigDecimal.ZERO);
+                    BigDecimal paid = paidBySupplier.getOrDefault(supplier.getId(), BigDecimal.ZERO);
+                    BigDecimal balance = invoiced.subtract(paid);
                     result.add(new SupplierLedgerRow(
                             supplier.getId(), supplier.getName(),
-                            supplier.getTotalAdvancedPaid(), supplier.getRetainageHeldAmount(),
-                            spend, balance));
+                            invoiced, paid,
+                            supplier.getRetainageHeldAmount(), balance));
                 });
         return result;
     }
 
     public SpendForecastResult getSpendForecast(UUID buildingId) {
-        BigDecimal totalSpend = expenseRepository.sumAmountBaseCurrencyByBuilding(
-                buildingId, ExpenseStatus.APPROVED);
+        BigDecimal totalSpend = expenseRepository.sumAmountByBuildingAndStatusIn(
+                buildingId, INVOICED_STATUSES);
         LocalDate firstDate = expenseRepository.findFirstExpenseDateByBuilding(buildingId);
 
         if (firstDate == null || totalSpend.compareTo(BigDecimal.ZERO) == 0) {
@@ -108,8 +123,8 @@ public class ReportService {
 
     public CostPerM2Result getCostPerM2(UUID buildingId, BuildingService buildingService) {
         var building = buildingService.getExistingEntity(buildingId);
-        BigDecimal totalSpend = expenseRepository.sumAmountBaseCurrencyByBuilding(
-                buildingId, ExpenseStatus.APPROVED);
+        BigDecimal totalSpend = expenseRepository.sumAmountByBuildingAndStatusIn(
+                buildingId, INVOICED_STATUSES);
 
         BigDecimal costPerM2 = BigDecimal.ZERO;
         if (building.getFloorAreaM2() != null && building.getFloorAreaM2().compareTo(BigDecimal.ZERO) > 0) {
@@ -128,7 +143,8 @@ public class ReportService {
     }
 
     public List<Map<String, Object>> getMonthlyTrend(UUID buildingId) {
-        List<Object[]> rows = expenseRepository.sumMonthlyByBuilding(buildingId, ExpenseStatus.APPROVED.name());
+        String[] statuses = INVOICED_STATUSES.stream().map(ExpenseStatus::name).toArray(String[]::new);
+        List<Object[]> rows = expenseRepository.sumMonthlyByBuildingAndStatusIn(buildingId, statuses);
         return rows.stream().map(row -> Map.<String, Object>of(
                 "month", row[0].toString(),
                 "total", row[1]

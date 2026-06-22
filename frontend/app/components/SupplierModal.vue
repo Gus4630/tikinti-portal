@@ -21,6 +21,7 @@ const form = reactive({
   retainageHeldAmount: props.supplier?.retainageHeldAmount ? String(props.supplier.retainageHeldAmount) : '',
 })
 
+const { resolveError } = useApiError()
 const loading = ref(false)
 const error = ref('')
 
@@ -53,8 +54,9 @@ async function save() {
       })
     }
     emit('saved')
-  } catch {
-    error.value = 'Xəta baş verdi. Yenidən cəhd edin.'
+  } catch (err: unknown) {
+    const { message } = resolveError(err)
+    error.value = message
   } finally {
     loading.value = false
   }

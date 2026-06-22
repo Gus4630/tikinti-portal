@@ -1,6 +1,7 @@
 package az.tikinti.portal.model.dto.request.expense;
 
 import az.tikinti.portal.model.dto.request.building.BuildingMediaRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -21,9 +22,7 @@ public class ExpenseRequest {
 
     private UUID supplierId;
 
-    @NotNull
-    @Positive
-    private BigDecimal amount;
+    private BigDecimal amount; // nullable when items are provided; service computes from items if absent
 
     @NotBlank
     private String currency;
@@ -34,4 +33,7 @@ public class ExpenseRequest {
     private String notes;
 
     private List<ExpenseMediaRequest> media;
+
+    @Valid
+    private List<ExpenseItemRequest> items;
 }

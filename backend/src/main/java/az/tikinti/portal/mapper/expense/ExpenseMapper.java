@@ -6,11 +6,13 @@ import static org.mapstruct.MappingConstants.ComponentModel.SPRING;
 import az.tikinti.portal.dao.entity.expense.ExpenseEntity;
 import az.tikinti.portal.dao.entity.expense.ExpenseMediaEntity;
 import az.tikinti.portal.model.dto.request.expense.ExpenseMediaRequest;
+import az.tikinti.portal.model.dto.request.expense.ExpenseUpdateRequest;
 import az.tikinti.portal.model.dto.response.PageableResponse;
 import az.tikinti.portal.model.dto.response.expense.ExpenseMediaResponse;
 import az.tikinti.portal.model.dto.response.expense.ExpenseResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 import org.springframework.data.domain.Page;
 
@@ -26,9 +28,21 @@ public interface ExpenseMapper {
     @Mapping(target = "supplierId", source = "supplier.id")
     @Mapping(target = "supplierName", source = "supplier.name")
     @Mapping(target = "media", ignore = true)
+    @Mapping(target = "items", ignore = true)
     ExpenseResponse toResponse(ExpenseEntity entity);
 
     PageableResponse<ExpenseResponse> toResponse(Page<ExpenseEntity> page);
+
+    @Mapping(target = "building", ignore = true)
+    @Mapping(target = "category", ignore = true)
+    @Mapping(target = "supplier", ignore = true)
+    @Mapping(target = "contentHash", ignore = true)
+    @Mapping(target = "imageUrl", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "exchangeRate", ignore = true)
+    @Mapping(target = "amountBaseCurrency", ignore = true)
+    @Mapping(target = "items", ignore = true)
+    void updateEntityFromRequest(ExpenseUpdateRequest request, @MappingTarget ExpenseEntity entity);
 
     @Mapping(target = "expense", ignore = true)
     ExpenseMediaEntity toMediaEntity(ExpenseMediaRequest request);

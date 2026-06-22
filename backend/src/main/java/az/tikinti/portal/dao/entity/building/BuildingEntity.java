@@ -44,6 +44,6 @@ public class BuildingEntity extends BaseEntity {
 
     @NotAudited
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id")
+    @JoinColumn(name = "group_id", nullable = false)
     private GroupEntity group;
 }

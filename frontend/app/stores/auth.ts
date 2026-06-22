@@ -1,4 +1,5 @@
 interface AuthUser {
+  id: string
   username: string
   fullName: string | null
   email: string
@@ -39,6 +40,20 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setUser(u: AuthUser) {
     user.value = u
+    if (import.meta.client) {
+      localStorage.setItem('tk_user', JSON.stringify(u))
+    }
+  }
+
+  async function fetchUser(apiBase: string) {
+    if (!token.value) return
+    try {
+      const u = await $fetch<AuthUser>('/api/v1/auth/me', {
+        baseURL: apiBase,
+        headers: { Authorization: `Bearer ${token.value}` },
+      })
+      setUser(u)
+    } catch { /* invalid token — fetch interceptor handles 401 */ }
   }
 
   function logout() {
@@ -48,6 +63,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (import.meta.client) {
       localStorage.removeItem('tk_access')
       localStorage.removeItem('tk_refresh')
+      localStorage.removeItem('tk_user')
     }
   }
 
@@ -55,10 +71,14 @@ export const useAuthStore = defineStore('auth', () => {
     if (import.meta.client) {
       const stored = localStorage.getItem('tk_access')
       const storedRefresh = localStorage.getItem('tk_refresh')
+      const storedUser = localStorage.getItem('tk_user')
       if (stored) token.value = stored
       if (storedRefresh) refreshToken.value = storedRefresh
+      if (storedUser) {
+        try { user.value = JSON.parse(storedUser) } catch { /* ignore corrupt cache */ }
+      }
     }
   }
 
-  return { token, refreshToken, user, isAuthenticated, initials, displayName, setTokens, setUser, logout, hydrate }
+  return { token, refreshToken, user, isAuthenticated, initials, displayName, setTokens, setUser, fetchUser, logout, hydrate }
 })

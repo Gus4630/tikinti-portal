@@ -11,6 +11,9 @@ const emit = defineEmits<{
 
 const config = useRuntimeConfig()
 const auth = useAuthStore()
+const router = useRouter()
+
+const hasNoGroups = computed(() => !props.building && props.groups.length === 0)
 
 const form = reactive({
   name: String(props.building?.name ?? ''),
@@ -21,14 +24,21 @@ const form = reactive({
   groupId: props.building?.groupId ? String(props.building.groupId) : '',
 })
 
+const { resolveError } = useApiError()
 const loading = ref(false)
 const error = ref('')
 
 const isEdit = computed(() => !!props.building?.id)
 const title = computed(() => isEdit.value ? 'Binanı redaktə et' : 'Yeni bina')
 
+function goToGroups() {
+  emit('close')
+  router.push('/groups')
+}
+
 async function save() {
   if (!form.name.trim()) { error.value = 'Ad tələb olunur'; return }
+  if (!form.groupId) { error.value = 'Qrup seçilməlidir'; return }
   error.value = ''
   loading.value = true
   try {
@@ -38,7 +48,7 @@ async function save() {
       description: form.description.trim() || undefined,
       floorAreaM2: form.floorAreaM2 ? Number(form.floorAreaM2) : undefined,
       budgetLimit: form.budgetLimit ? Number(form.budgetLimit) : undefined,
-      groupId: form.groupId || undefined,
+      groupId: form.groupId,
     }
     const headers = { Authorization: `Bearer ${auth.token}` }
     if (isEdit.value) {
@@ -51,8 +61,9 @@ async function save() {
       })
     }
     emit('saved')
-  } catch {
-    error.value = 'Xəta baş verdi. Yenidən cəhd edin.'
+  } catch (err: unknown) {
+    const { message } = resolveError(err)
+    error.value = message
   } finally {
     loading.value = false
   }
@@ -71,99 +82,119 @@ async function save() {
         </button>
       </div>
 
-      <!-- Body -->
-      <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
-        <div v-if="error" style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:10px 14px;font-size:13.5px;color:#DC2626">
-          {{ error }}
+      <!-- No-groups empty state -->
+      <div v-if="hasNoGroups" style="padding:40px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px">
+        <div style="width:52px;height:52px;border-radius:50%;background:#F0F4FF;display:flex;align-items:center;justify-content:center">
+          <UIcon name="i-lucide-users" style="width:24px;height:24px;color:#3D5AF1" />
         </div>
-
-        <!-- Name -->
         <div>
-          <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Ad <span style="color:#EF4444">*</span></label>
-          <input
-            v-model="form.name"
-            type="text"
-            placeholder="məs. Yasamal Kompleks"
-            style="width:100%;height:40px;border:1px solid #D1D5DB;border-radius:8px;padding:0 12px;font-size:14px;color:#0A0A0A;font-family:inherit;outline:none;box-sizing:border-box"
-          >
+          <p style="font-size:15px;font-weight:600;color:#0A0A0A;margin:0 0 6px">Əvvəlcə qrup yaradın</p>
+          <p style="font-size:13.5px;color:#6B7280;margin:0;line-height:1.5">Bina yaratmaq üçün ən azı bir qrupun üzvü olmalısınız. Qrup yaradın, sonra binalar əlavə edin.</p>
         </div>
+        <button
+          style="height:40px;padding:0 20px;background:#3D5AF1;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px"
+          @click="goToGroups"
+        >
+          <UIcon name="i-lucide-arrow-right" style="width:15px;height:15px" />
+          Qruplara keç
+        </button>
+      </div>
 
-        <!-- Address -->
-        <div>
-          <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Ünvan</label>
-          <input
-            v-model="form.address"
-            type="text"
-            placeholder="məs. Bakı, Yasamal r-nu"
-            style="width:100%;height:40px;border:1px solid #D1D5DB;border-radius:8px;padding:0 12px;font-size:14px;color:#0A0A0A;font-family:inherit;outline:none;box-sizing:border-box"
-          >
-        </div>
+      <!-- Normal form -->
+      <template v-else>
+        <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+          <div v-if="error" style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:10px 14px;font-size:13.5px;color:#DC2626">
+            {{ error }}
+          </div>
 
-        <!-- Description -->
-        <div>
-          <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Açıqlama</label>
-          <textarea
-            v-model="form.description"
-            rows="2"
-            placeholder="Qısa açıqlama..."
-            style="width:100%;border:1px solid #D1D5DB;border-radius:8px;padding:10px 12px;font-size:14px;color:#0A0A0A;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box"
-          />
-        </div>
-
-        <!-- Floor area + Budget limit side by side -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <!-- Name -->
           <div>
-            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Sahə (m²)</label>
+            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Ad <span style="color:#EF4444">*</span></label>
             <input
-              v-model="form.floorAreaM2"
-              type="number"
-              min="0"
-              placeholder="0"
+              v-model="form.name"
+              type="text"
+              placeholder="məs. Yasamal Kompleks"
               style="width:100%;height:40px;border:1px solid #D1D5DB;border-radius:8px;padding:0 12px;font-size:14px;color:#0A0A0A;font-family:inherit;outline:none;box-sizing:border-box"
             >
           </div>
+
+          <!-- Address -->
           <div>
-            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Büdcə (₼)</label>
+            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Ünvan</label>
             <input
-              v-model="form.budgetLimit"
-              type="number"
-              min="0"
-              placeholder="0.00"
+              v-model="form.address"
+              type="text"
+              placeholder="məs. Bakı, Yasamal r-nu"
               style="width:100%;height:40px;border:1px solid #D1D5DB;border-radius:8px;padding:0 12px;font-size:14px;color:#0A0A0A;font-family:inherit;outline:none;box-sizing:border-box"
             >
           </div>
+
+          <!-- Description -->
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Açıqlama</label>
+            <textarea
+              v-model="form.description"
+              rows="2"
+              placeholder="Qısa açıqlama..."
+              style="width:100%;border:1px solid #D1D5DB;border-radius:8px;padding:10px 12px;font-size:14px;color:#0A0A0A;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box"
+            />
+          </div>
+
+          <!-- Floor area + Budget limit side by side -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div>
+              <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Sahə (m²)</label>
+              <input
+                v-model="form.floorAreaM2"
+                type="number"
+                min="0"
+                placeholder="0"
+                style="width:100%;height:40px;border:1px solid #D1D5DB;border-radius:8px;padding:0 12px;font-size:14px;color:#0A0A0A;font-family:inherit;outline:none;box-sizing:border-box"
+              >
+            </div>
+            <div>
+              <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Büdcə (₼)</label>
+              <input
+                v-model="form.budgetLimit"
+                type="number"
+                min="0"
+                placeholder="0.00"
+                style="width:100%;height:40px;border:1px solid #D1D5DB;border-radius:8px;padding:0 12px;font-size:14px;color:#0A0A0A;font-family:inherit;outline:none;box-sizing:border-box"
+              >
+            </div>
+          </div>
+
+          <!-- Group (required) -->
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Qrup <span style="color:#EF4444">*</span></label>
+            <select
+              v-model="form.groupId"
+              style="width:100%;height:40px;border:1px solid #D1D5DB;border-radius:8px;padding:0 12px;font-size:14px;background:#fff;color:#0A0A0A;font-family:inherit;outline:none;box-sizing:border-box"
+            >
+              <option value="">— Seçin —</option>
+              <option v-for="g in groups" :key="String(g.id)" :value="g.id">{{ g.name }}</option>
+            </select>
+          </div>
         </div>
 
-        <!-- Group -->
-        <div v-if="groups.length">
-          <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Qrup</label>
-          <select
-            v-model="form.groupId"
-            style="width:100%;height:40px;border:1px solid #D1D5DB;border-radius:8px;padding:0 12px;font-size:14px;background:#fff;color:#0A0A0A;font-family:inherit;outline:none;box-sizing:border-box"
+        <!-- Footer -->
+        <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid #F3F4F6;background:#FAFBFC">
+          <button
+            style="height:38px;padding:0 18px;background:#fff;color:#374151;border:1px solid #D1D5DB;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit"
+            @click="emit('close')"
           >
-            <option value="">— Seçin —</option>
-            <option v-for="g in groups" :key="String(g.id)" :value="g.id">{{ g.name }}</option>
-          </select>
+            Ləğv et
+          </button>
+          <button
+            :disabled="loading"
+            style="height:38px;padding:0 20px;background:#3D5AF1;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px"
+            @click="save"
+          >
+            <UIcon v-if="loading" name="i-lucide-loader-2" style="width:15px;height:15px;animation:spin 1s linear infinite" />
+            {{ loading ? 'Saxlanılır...' : 'Saxla' }}
+          </button>
         </div>
-      </div>
-
-      <!-- Footer -->
-      <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid #F3F4F6;background:#FAFBFC">
-        <button
-          style="height:38px;padding:0 18px;background:#fff;color:#374151;border:1px solid #D1D5DB;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit"
-          @click="emit('close')"
-        >
-          Ləğv et
-        </button>
-        <button
-          :disabled="loading"
-          style="height:38px;padding:0 20px;background:#3D5AF1;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px"
-          @click="save"
-        >
-          <UIcon v-if="loading" name="i-lucide-loader-2" style="width:15px;height:15px;animation:spin 1s linear infinite" />
-          {{ loading ? 'Saxlanılır...' : 'Saxla' }}
-        </button>
-      </div>
+      </template>
     </div>
   </div>
 </template>

@@ -1,6 +1,8 @@
 export default defineNuxtConfig({
   modules: ['@nuxt/ui', '@pinia/nuxt', '@nuxt/eslint'],
 
+  ssr: false,
+
   devtools: { enabled: true },
 
   css: ['~/assets/css/main.css'],
@@ -8,10 +10,6 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-01-15',
 
   future: { compatibilityVersion: 4 },
-
-  router: {
-    middleware: ['auth'],
-  },
 
   runtimeConfig: {
     public: {
@@ -21,9 +19,17 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'Tikinti Portal',
+      title: 'SagaGroup',
       htmlAttrs: { lang: 'az' },
+      meta: [
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        { name: 'theme-color', content: '#0D1440' },
+      ],
       link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'apple-touch-icon', href: '/favicon.svg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {

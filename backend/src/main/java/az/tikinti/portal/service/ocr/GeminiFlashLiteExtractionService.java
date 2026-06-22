@@ -8,18 +8,20 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class GeminiFlashLiteExtractionService extends AbstractGeminiExtractionService {
 
-    private static final String MODEL_ID = "gemini-3.1-flash-lite";
+    private final String modelId;
 
     public GeminiFlashLiteExtractionService(
             RestTemplate restTemplate,
             ObjectMapper objectMapper,
             @Value("${application.gemini.api-url}") String apiUrl,
-            @Value("${application.gemini.api-key}") String apiKey) {
+            @Value("${application.gemini.api-key}") String apiKey,
+            @Value("${application.gemini.primary-model}") String modelId) {
         super(restTemplate, objectMapper, apiUrl, apiKey);
+        this.modelId = modelId;
     }
 
     @Override
     protected String getModelId() {
-        return MODEL_ID;
+        return modelId;
     }
 }
