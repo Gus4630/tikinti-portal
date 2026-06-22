@@ -3,6 +3,9 @@ backend/.env
 backend/.env.local
 **/.env.local
 
+# Local-only docs
+DEPLOYMENT.md
+
 # Build / IDE artifacts
 backend/build/
 backend/.gradle/
