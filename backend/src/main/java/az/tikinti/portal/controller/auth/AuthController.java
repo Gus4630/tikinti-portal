@@ -1,6 +1,7 @@
 package az.tikinti.portal.controller.auth;
 
 import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import az.tikinti.portal.model.dto.request.auth.LoginRequest;
 import az.tikinti.portal.model.dto.request.auth.RefreshTokenRequest;
@@ -63,6 +64,7 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<UserResponse> me(Authentication authentication) {
+        if (authentication == null) return ResponseEntity.status(UNAUTHORIZED).build();
         UUID userId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(authService.getMe(userId));
     }
@@ -71,18 +73,21 @@ public class AuthController {
     public ResponseEntity<UserResponse> updateProfile(
             Authentication authentication,
             @RequestBody Map<String, String> body) {
+        if (authentication == null) return ResponseEntity.status(UNAUTHORIZED).build();
         UUID userId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(authService.updateProfile(userId, body.get("fullName")));
     }
 
     @GetMapping("/sessions")
     public ResponseEntity<List<SessionResponse>> listSessions(Authentication authentication) {
+        if (authentication == null) return ResponseEntity.status(UNAUTHORIZED).build();
         UUID userId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(authService.listSessions(userId));
     }
 
     @DeleteMapping("/sessions/{sessionId}")
     public ResponseEntity<Void> revokeSession(@PathVariable UUID sessionId, Authentication authentication) {
+        if (authentication == null) return ResponseEntity.status(UNAUTHORIZED).build();
         UUID userId = UUID.fromString(authentication.getName());
         authService.revokeSession(userId, sessionId);
         return ResponseEntity.noContent().build();
@@ -90,6 +95,7 @@ public class AuthController {
 
     @DeleteMapping("/sessions")
     public ResponseEntity<Void> revokeAllSessions(Authentication authentication) {
+        if (authentication == null) return ResponseEntity.status(UNAUTHORIZED).build();
         UUID userId = UUID.fromString(authentication.getName());
         authService.revokeAllSessions(userId);
         return ResponseEntity.noContent().build();
@@ -97,12 +103,14 @@ public class AuthController {
 
     @GetMapping("/me/invitations")
     public ResponseEntity<List<GroupInvitationResponse>> getMyInvitations(Authentication authentication) {
+        if (authentication == null) return ResponseEntity.status(UNAUTHORIZED).build();
         UUID userId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(groupService.getMyInvitations(userId));
     }
 
     @PostMapping("/me/invitations/{id}/accept")
     public ResponseEntity<Void> acceptInvitation(@PathVariable UUID id, Authentication authentication) {
+        if (authentication == null) return ResponseEntity.status(UNAUTHORIZED).build();
         UUID userId = UUID.fromString(authentication.getName());
         groupService.acceptInvitation(id, userId);
         return ResponseEntity.noContent().build();
@@ -110,6 +118,7 @@ public class AuthController {
 
     @PostMapping("/me/invitations/{id}/decline")
     public ResponseEntity<Void> declineInvitation(@PathVariable UUID id, Authentication authentication) {
+        if (authentication == null) return ResponseEntity.status(UNAUTHORIZED).build();
         UUID userId = UUID.fromString(authentication.getName());
         groupService.declineInvitation(id, userId);
         return ResponseEntity.noContent().build();

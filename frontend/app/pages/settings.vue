@@ -4,6 +4,11 @@ definePageMeta({ layout: 'default' })
 const config = useRuntimeConfig()
 const auth = useAuthStore()
 const headers = computed(() => ({ Authorization: `Bearer ${auth.token}` }))
+const tutorial = useTutorial()
+
+function startTutorial() {
+  tutorial.start()
+}
 
 // Profile
 const profile = reactive({ fullName: '', email: '', username: '' })
@@ -161,6 +166,26 @@ async function saveProfile() {
           Kateqoriyalara keç
           <UIcon name="i-lucide-arrow-right" style="width:14px;height:14px" />
         </NuxtLink>
+      </div>
+
+      <!-- Tutorial card (full width) -->
+      <div class="tk-card" style="grid-column:1 / -1;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:38px;height:38px;border-radius:9px;background:#FFF7ED;display:flex;align-items:center;justify-content:center;flex:none">
+            <UIcon name="i-lucide-graduation-cap" style="width:18px;height:18px;color:#D97706" />
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#0A0A0A">Məhsul Turu</div>
+            <div style="font-size:13px;color:#6B7280;margin-top:1px">Portalın əsas imkanlarını addım-addım keçin</div>
+          </div>
+        </div>
+        <button
+          style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 16px;background:#F59E0B;color:#fff;border:none;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;flex:none"
+          @click="startTutorial"
+        >
+          <UIcon name="i-lucide-play" style="width:14px;height:14px" />
+          Turu Başlat
+        </button>
       </div>
     </div>
   </div>

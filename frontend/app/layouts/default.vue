@@ -2,25 +2,28 @@
 const auth = useAuthStore()
 const context = useContextStore()
 const route = useRoute()
+const tutorial = useTutorial()
 
-const navItems = [
+interface NavItem { label: string; icon: string; to: string; tutorial?: string }
+
+const navItems: NavItem[] = [
   { label: 'İdarə paneli', icon: 'i-lucide-layout-dashboard', to: '/dashboard' },
-  { label: 'Binalar',      icon: 'i-lucide-building-2',       to: '/buildings' },
-  { label: 'Xərclər',     icon: 'i-lucide-file-text',        to: '/expenses' },
-  { label: 'Kateqoriyalar',icon: 'i-lucide-tag',             to: '/categories' },
-  { label: 'Təchizatçılar',icon: 'i-lucide-truck',           to: '/suppliers' },
-  { label: 'Qruplar',     icon: 'i-lucide-users',            to: '/groups' },
-  { label: 'Hesabatlar',  icon: 'i-lucide-bar-chart-2',      to: '/reports' },
+  { label: 'Binalar',       icon: 'i-lucide-building-2',       to: '/buildings',  tutorial: 'nav-buildings' },
+  { label: 'Xərclər',      icon: 'i-lucide-file-text',        to: '/expenses',   tutorial: 'nav-expenses' },
+  { label: 'Kateqoriyalar', icon: 'i-lucide-tag',             to: '/categories', tutorial: 'nav-categories' },
+  { label: 'Təchizatçılar', icon: 'i-lucide-truck',           to: '/suppliers' },
+  { label: 'Qruplar',      icon: 'i-lucide-users',            to: '/groups',     tutorial: 'nav-groups' },
+  { label: 'Hesabatlar',   icon: 'i-lucide-bar-chart-2',      to: '/reports',    tutorial: 'nav-reports' },
 ]
-const bottomNav = [
-  { label: 'Ayarlar', icon: 'i-lucide-settings', to: '/settings' },
+const bottomNav: NavItem[] = [
+  { label: 'Ayarlar', icon: 'i-lucide-settings', to: '/settings', tutorial: 'nav-settings' },
 ]
 
 // Mobile bottom tab bar — 4 primary tabs
-const mobileNavTabs = [
+const mobileNavTabs: NavItem[] = [
   { label: 'İdarə paneli', icon: 'i-lucide-layout-dashboard', to: '/dashboard' },
-  { label: 'Xərclər',     icon: 'i-lucide-file-text',        to: '/expenses' },
-  { label: 'Binalar',     icon: 'i-lucide-building-2',       to: '/buildings' },
+  { label: 'Xərclər',     icon: 'i-lucide-file-text',        to: '/expenses',  tutorial: 'mobile-nav-expenses' },
+  { label: 'Binalar',     icon: 'i-lucide-building-2',       to: '/buildings', tutorial: 'mobile-nav-buildings' },
   { label: 'Qruplar',     icon: 'i-lucide-users',            to: '/groups' },
 ]
 
@@ -48,6 +51,7 @@ const expanded = computed(() => pinned.value || hovered.value)
 onMounted(() => {
   const saved = localStorage.getItem('sidebar_pinned')
   if (saved !== null) pinned.value = saved === 'true'
+  tutorial.init()
 })
 
 watch(pinned, v => localStorage.setItem('sidebar_pinned', String(v)))
@@ -81,6 +85,7 @@ function handleLogout() {
   <div style="display:flex;height:100vh;width:100%;overflow:hidden">
     <!-- ── Sidebar (desktop only) ──────────────────────────────── -->
     <aside
+      data-tutorial="sidebar"
       class="layout-sidebar"
       :style="{
         flex: 'none',
@@ -124,6 +129,7 @@ function handleLogout() {
           :to="item.to"
           class="nav-item"
           :class="{ active: isActive(item.to) }"
+          :data-tutorial="item.tutorial"
         >
           <UIcon :name="item.icon" style="width:18px;height:18px;flex:none" />
           <span class="nav-label" :style="{ opacity: expanded ? '1' : '0' }">{{ item.label }}</span>
@@ -138,6 +144,7 @@ function handleLogout() {
           :to="item.to"
           class="nav-item"
           :class="{ active: isActive(item.to) }"
+          :data-tutorial="item.tutorial"
         >
           <UIcon :name="item.icon" style="width:18px;height:18px;flex:none" />
           <span class="nav-label" :style="{ opacity: expanded ? '1' : '0' }">{{ item.label }}</span>
@@ -213,18 +220,20 @@ function handleLogout() {
     </div>
 
     <!-- ── Mobile bottom nav ───────────────────────────────────── -->
-    <nav class="mobile-nav">
+    <nav class="mobile-nav" data-tutorial="mobile-nav">
       <NuxtLink
         v-for="tab in mobileNavTabs"
         :key="tab.to"
         :to="tab.to"
         class="mobile-nav-tab"
         :class="{ active: isActive(tab.to) }"
+        :data-tutorial="tab.tutorial"
       >
         <UIcon :name="tab.icon" style="width:22px;height:22px" />
         {{ tab.label }}
       </NuxtLink>
       <button
+        data-tutorial="mobile-more"
         class="mobile-nav-tab"
         :class="{ active: moreActive || moreOpen }"
         @click="moreOpen = true"
@@ -255,6 +264,9 @@ function handleLogout() {
         </div>
       </div>
     </Teleport>
+
+    <!-- ── Tutorial overlay ──────────────────────────────────── -->
+    <AppTutorial />
 
     <!-- ── Mobile Profile sheet ───────────────────────────────── -->
     <Teleport to="body">

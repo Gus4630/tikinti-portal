@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.experimental.UtilityClass;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @UtilityClass
@@ -22,6 +23,10 @@ public class LogUtil {
 
     private static Object sanitize(Object arg) {
         if (arg == null) return null;
+
+        if (AopUtils.isAopProxy(arg)) {
+            return arg.toString();
+        }
 
         if (arg instanceof byte[] bytes) {
             return "<binary: " + bytes.length + " bytes>";

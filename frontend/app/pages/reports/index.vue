@@ -206,6 +206,7 @@ function usedColor(pct: number) {
       <button
         v-for="tab in tabs"
         :key="tab.id"
+        :data-tutorial-tab="tab.id"
         :style="{
           padding: '10px 16px', fontSize: '14px', fontWeight: '600',
           border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit',
