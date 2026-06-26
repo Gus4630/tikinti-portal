@@ -117,7 +117,7 @@ defineProps<{ type: string }>()
     </div>
   </div>
 
-  <!-- ── AI review ─────────────────────────────────────────────── -->
+  <!-- ── Süni intelekt baxışı ──────────────────────────────────── -->
   <div v-else-if="type === 'ai-review'" class="tp-preview">
     <div style="padding:8px 12px;background:#EEF2FF;border-bottom:1px solid #E5E7EB;display:flex;align-items:center;gap:6px">
       <UIcon name="i-lucide-bot" style="width:13px;height:13px;color:#3D5AF1;flex:none" />
